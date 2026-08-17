@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',async()=>{if(!activeUser())return;try{const remote=await window.cloudLoad();if(remote?.works&&remote?.categories){state=remote;localStorage.setItem(KEY,JSON.stringify(state));render()}else window.cloudSave?.(state)}catch(error){console.warn('Não foi possível carregar a biblioteca online.',error.message)}});

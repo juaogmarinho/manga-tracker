@@ -1,0 +1,2 @@
+window.applyPublicSettings=settings=>{if(!settings)return;if(settings.appName)document.querySelectorAll('.brand>span:last-child').forEach(node=>node.childNodes[0].nodeValue=settings.appName);if(settings.accent)document.documentElement.style.setProperty('--accent',settings.accent);if(settings.welcome)document.querySelector('.hero h2').innerHTML=settings.welcome.replace(/\n/g,'<br>')};
+document.addEventListener('DOMContentLoaded',async()=>window.applyPublicSettings(await window.cloudSettings?.()));
