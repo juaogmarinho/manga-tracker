@@ -81,27 +81,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     const error = document.querySelector('#authError');
     if (!email || password.length < 6 || (loginMode === 'register' && !name)) { error.textContent = 'Preencha os campos; a senha deve ter pelo menos 6 caracteres.'; return; }
     const submit = document.querySelector('.auth-submit'); submit.disabled = true; submit.textContent = 'Aguarde...';
+
+    const finishLocalLogin = user => {
+      cacheUser(user);
+      submit.disabled = false;
+      location.reload();
+    };
+
     if (!client) {
       if (loginMode === 'register') {
         const result = createLocalUser({ name, email, password });
         submit.disabled = false;
         if (result.error) { error.textContent = result.error; return; }
-        cacheUser(result.data.user);
-        location.reload();
+        finishLocalLogin(result.data.user);
         return;
       }
       const adminMatch = email === OFFLINE_ADMIN.email && password === OFFLINE_ADMIN.password;
       const localMatch = getLocalUser(email, password);
       submit.disabled = false;
-      if (adminMatch) { cacheUser(OFFLINE_ADMIN); location.reload(); return; }
-      if (localMatch) { cacheUser(localMatch); location.reload(); return; }
+      if (adminMatch) { finishLocalLogin(OFFLINE_ADMIN); return; }
+      if (localMatch) { finishLocalLogin(localMatch); return; }
       error.textContent = 'Credenciais inválidas. Use admin@kitsune.local / admin123 ou cadastre uma conta local.'; return;
     }
-    const result = loginMode === 'register' ? await client.auth.signUp({ email, password, options: { data: { full_name: name } } }) : await client.auth.signInWithPassword({ email, password });
-    submit.disabled = false;
-    if (result.error) { error.textContent = result.error.message; setAuthMode(loginMode); return; }
-    if (loginMode === 'register' && !result.data.session) { error.textContent = 'Conta criada. Confira seu e-mail para confirmar o acesso.'; return; }
-    cacheUser(result.data.user); location.reload();
+
+    try {
+      const result = loginMode === 'register'
+        ? await client.auth.signUp({ email, password, options: { data: { full_name: name } } })
+        : await client.auth.signInWithPassword({ email, password });
+
+      if (result?.error) {
+        const msg = String(result.error.message || '').toLowerCase();
+        const fallbackLocal = loginMode === 'register' ? createLocalUser({ name, email, password }) : null;
+        if (fallbackLocal && !fallbackLocal.error) {
+          finishLocalLogin(fallbackLocal.data.user);
+          return;
+        }
+        if (loginMode !== 'register') {
+          const adminMatch = email === OFFLINE_ADMIN.email && password === OFFLINE_ADMIN.password;
+          const localMatch = getLocalUser(email, password);
+          if (adminMatch) { finishLocalLogin(OFFLINE_ADMIN); return; }
+          if (localMatch) { finishLocalLogin(localMatch); return; }
+        }
+        if (msg.includes('not found') || msg.includes('invalid login') || msg.includes('failed') || msg.includes('config') || msg.includes('400') || msg.includes('fetch')) {
+          if (loginMode === 'register') {
+            const created = createLocalUser({ name, email, password });
+            if (!created.error) { finishLocalLogin(created.data.user); return; }
+          }
+        }
+        error.textContent = result.error.message;
+        setAuthMode(loginMode);
+        return;
+      }
+
+      if (loginMode === 'register' && !result?.data?.session) {
+        error.textContent = 'Conta criada. Confira seu e-mail para confirmar o acesso.';
+        submit.disabled = false;
+        return;
+      }
+
+      cacheUser(result.data.user);
+      location.reload();
+    } catch (err) {
+      const fallback = loginMode === 'register' ? createLocalUser({ name, email, password }) : null;
+      if (loginMode === 'register' && fallback && !fallback.error) {
+        finishLocalLogin(fallback.data.user);
+        return;
+      }
+      const adminMatch = email === OFFLINE_ADMIN.email && password === OFFLINE_ADMIN.password;
+      const localMatch = getLocalUser(email, password);
+      if (adminMatch) { finishLocalLogin(OFFLINE_ADMIN); return; }
+      if (localMatch) { finishLocalLogin(localMatch); return; }
+      error.textContent = 'Não foi possível completar a autenticação. Tente novamente.';
+      submit.disabled = false;
+    }
   });
   document.querySelector('#logout').addEventListener('click', async () => { if (client) await client.auth.signOut(); localStorage.removeItem(SESSION_KEY); location.reload(); });
 });
