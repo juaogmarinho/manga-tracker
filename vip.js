@@ -1,3 +1,8 @@
+// Enquanto a Área VIP está em desenvolvimento, o acesso é liberado como teste grátis,
+// sem cobrança. Para religar o pagamento via Mercado Pago mais tarde, basta trocar
+// VIP_MODE para 'paid' — todo o fluxo de checkout já está pronto em cloud.js.
+const VIP_MODE = 'trial'; // 'trial' | 'paid'
+const VIP_TRIAL_DAYS = 7;
 const VIP_LOCAL_KEY = 'kitsune-local-vip-status';
 const VIP_LOCAL_CATALOG_KEY = 'kitsune-local-vip-catalog';
 
@@ -28,20 +33,43 @@ async function renderVipPage() {
   const status = await loadVipStatus();
 
   if (!status.active) {
+    const trialMode = VIP_MODE === 'trial';
     wrap.innerHTML = `
       <div class="vip-pitch">
-        <span class="vip-badge">✦ VIP</span>
+        <span class="vip-badge">✦ VIP ${trialMode ? '· Teste grátis' : ''}</span>
         <h2>Desbloqueie o acervo de mangás exclusivos</h2>
-        <p>Assinantes VIP têm acesso aos mangás já disponíveis no site por apenas <b>R$ 3,00</b>.</p>
-        <button class="primary" id="vipSubscribeBtn">Assinar VIP · R$ 3,00 <b>→</b></button>
+        <p>${trialMode
+          ? `A Área VIP está em desenvolvimento — por enquanto, ative um teste grátis de ${VIP_TRIAL_DAYS} dias e explore o acervo sem pagar nada.`
+          : 'Assinantes VIP têm acesso aos mangás já disponíveis no site por apenas <b>R$ 3,00</b>.'}</p>
+        <button class="primary" id="vipSubscribeBtn">${trialMode ? `Ativar teste grátis · ${VIP_TRIAL_DAYS} dias` : 'Assinar VIP · R$ 3,00'} <b>→</b></button>
         <p class="vip-note" id="vipNote"></p>
       </div>`;
     const note = document.querySelector('#vipNote');
     const btn = document.querySelector('#vipSubscribeBtn');
-    if (!client) {
-      note.textContent = 'Modo local: configure o Supabase e o Mercado Pago para habilitar pagamentos reais.';
-    }
+    const originalLabel = btn.innerHTML;
+
+    if (!client) note.textContent = trialMode
+      ? 'Modo local: o teste grátis fica salvo apenas neste navegador.'
+      : 'Pagamentos exigem o banco de dados e o Mercado Pago configurados (veja o README).';
+
     btn.addEventListener('click', async () => {
+      if (trialMode) {
+        btn.disabled = true; btn.textContent = 'Ativando...';
+        try {
+          if (client) {
+            await window.activateVipTrial();
+          } else {
+            const user = activeUser();
+            localStorage.setItem(VIP_LOCAL_KEY + ':' + user.id, '1');
+          }
+          note.textContent = '';
+          await renderVipPage();
+        } catch (error) {
+          note.textContent = error.message;
+          btn.disabled = false; btn.innerHTML = originalLabel;
+        }
+        return;
+      }
       if (!client) { note.textContent = 'Pagamentos exigem o banco de dados e o Mercado Pago configurados (veja o README).'; return; }
       btn.disabled = true; btn.textContent = 'Redirecionando...';
       try {
@@ -49,7 +77,7 @@ async function renderVipPage() {
         location.href = url;
       } catch (error) {
         note.textContent = error.message;
-        btn.disabled = false; btn.textContent = 'Assinar VIP · R$ 3,00 →';
+        btn.disabled = false; btn.innerHTML = originalLabel;
       }
     });
     return;
@@ -57,7 +85,7 @@ async function renderVipPage() {
 
   const catalog = await loadVipCatalog();
   wrap.innerHTML = `
-    <div class="vip-active-banner"><span class="vip-badge">✦ VIP ativo</span>${status.expiresAt ? `<small>Renova em ${new Intl.DateTimeFormat('pt-BR').format(new Date(status.expiresAt))}</small>` : ''}</div>
+    <div class="vip-active-banner"><span class="vip-badge">✦ VIP ativo${VIP_MODE === 'trial' ? ' · Teste grátis' : ''}</span>${status.expiresAt ? `<small>${VIP_MODE === 'trial' ? 'Teste expira em' : 'Renova em'} ${new Intl.DateTimeFormat('pt-BR').format(new Date(status.expiresAt))}</small>` : ''}</div>
     <div class="vip-grid">${catalog.length ? catalog.map(vipMangaCard).join('') : '<div class="empty">Nenhum mangá disponível no catálogo VIP ainda. Volte em breve!</div>'}</div>`;
 }
 

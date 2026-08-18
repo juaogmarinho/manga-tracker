@@ -3,8 +3,10 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null default 'Otaku',
   is_admin boolean not null default false,
+  avatar_url text,
   created_at timestamptz not null default now()
 );
+alter table public.profiles add column if not exists avatar_url text;
 
 create table if not exists public.libraries (
   user_id uuid primary key references auth.users(id) on delete cascade,

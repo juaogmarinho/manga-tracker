@@ -12,4 +12,13 @@
 .vip-body{padding:14px}
 .vip-body h3{margin:0 0 6px;font-size:15px}
 .vip-body p{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.5}
+.profile-card{display:block}
+.profile-form{display:grid;gap:14px;margin-top:14px;max-width:360px}
+.profile-avatar-upload{display:flex;align-items:center;gap:16px}
+.profile-avatar-upload>div{display:flex;flex-direction:column;gap:6px}
+#profileAvatarPreview{width:76px;height:76px;flex-shrink:0;border-radius:50%;border:1px dashed #5b5969;background-color:var(--panel2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:800;font-size:22px;cursor:pointer;transition:border-color .2s ease}
+#profileAvatarPreview:hover{border-color:var(--accent)}
+.profile-form label{font-size:12px;font-weight:600;color:#c9c7d0}
+.profile-form input{display:block;width:100%;margin-top:6px;background:#23232e;color:#fff;border:1px solid #3c3b4a;border-radius:9px;padding:10px;outline:0}
+.profile-form input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #ff71521d}
 @media(max-width:760px){.auth-screen{grid-template-columns:1fr}.auth-visual{min-height:205px;padding:25px}.auth-copy{margin-top:36px}.auth-copy h2{font-size:38px}.auth-copy>p:last-child{display:none}.auth-panel{align-items:start;padding-top:42px}}

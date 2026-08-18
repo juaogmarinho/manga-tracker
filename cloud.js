@@ -24,8 +24,14 @@ window.cloudLoad = async () => {
 window.cloudProfile = async () => {
   const client = await window.cloudReady, user = activeUser();
   if (!client || !user) return null;
-  const { data } = await client.from('profiles').select('full_name,is_admin').eq('id', user.id).maybeSingle();
+  const { data } = await client.from('profiles').select('full_name,is_admin,avatar_url').eq('id', user.id).maybeSingle();
   return data;
+};
+window.cloudSaveProfile = async patch => {
+  const client = await window.cloudReady, user = activeUser();
+  if (!client || !user) throw new Error('Entre na sua conta para salvar o perfil.');
+  const { error } = await client.from('profiles').update(patch).eq('id', user.id);
+  if (error) throw error;
 };
 window.cloudSettings = async () => {
   const client = await window.cloudReady;
@@ -80,4 +86,18 @@ window.createVipCheckout = async () => {
   const data = await response.json();
   if (!response.ok || !data.init_point) throw new Error(data.error || 'Não foi possível iniciar o pagamento.');
   return data.init_point;
+};
+window.activateVipTrial = async () => {
+  const client = await window.cloudReady;
+  if (!client) throw new Error('Banco indisponível.');
+  const { data } = await client.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Saia e entre novamente.');
+  const response = await fetch('/api/vip/activate-trial', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Não foi possível ativar o teste grátis.');
+  return result;
 };

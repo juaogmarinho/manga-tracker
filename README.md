@@ -17,10 +17,17 @@ public-settings.js                Aplicação de personalizações globais
 admin.js                          Painel administrativo (personalização + catálogo VIP)
 vip.js                            Página de assinatura VIP e catálogo de mangás exclusivos
 api/config.js                     Endpoint Vercel para configuração pública do Supabase
-api/mercadopago/create-preference.js  Cria a cobrança de R$ 3,00 no Mercado Pago
+api/vip/activate-trial.js         Ativa o teste grátis do VIP (modo atual, sem cobrança)
+api/mercadopago/create-preference.js  Cria a cobrança de R$ 3,00 no Mercado Pago (pronto p/ quando sair do teste)
 api/mercadopago/webhook.js        Confirma o pagamento e ativa a assinatura VIP
 supabase/schema.sql               Tabelas, políticas RLS e trigger do Supabase
 ```
+
+## Meu perfil
+
+Em **Configurações → Meu perfil**, cada usuário pode trocar o nome de exibição e enviar uma foto
+(até 2,5 MB). Com o Supabase conectado, isso fica salvo em `profiles.avatar_url`/`full_name` e
+sincroniza entre dispositivos; sem banco configurado, fica salvo só neste navegador.
 
 ## Minha biblioteca
 
@@ -31,29 +38,41 @@ atingir a obra errada quando havia nomes repetidos), obras importadas sem catego
 a tela) e categorias novas criadas durante o cadastro de uma obra, que se perdiam se o formulário
 fosse cancelado sem salvar.
 
-## Área VIP (R$ 3,00 · Mercado Pago)
+## Área VIP — atualmente em modo "Teste grátis"
 
-Assinantes VIP pagam R$ 3,00 via Mercado Pago (Pix ou cartão, na página de checkout do próprio
-Mercado Pago) e ganham acesso, por 30 dias, a um catálogo de mangás cadastrado pelo administrador.
-Sem o Supabase e o Mercado Pago configurados, a página VIP funciona em modo de demonstração local
-(sem cobrança real).
+Enquanto a Área VIP está em desenvolvimento, o botão de assinatura ativa um **teste grátis de 7
+dias** (sem cobrança) em vez de cobrar via Mercado Pago. Isso é controlado por uma única constante
+no topo de `vip.js`:
 
-Para habilitar pagamentos reais:
+```js
+const VIP_MODE = 'trial'; // troque para 'paid' quando quiser cobrar de verdade
+```
+
+Com `VIP_MODE = 'trial'`, o botão chama `/api/vip/activate-trial`, que confirma a sessão do
+usuário no Supabase Auth e libera 7 dias de acesso ao catálogo. Com `VIP_MODE = 'paid'`, o
+botão volta a usar o checkout do Mercado Pago (fluxo abaixo), sem precisar mexer em mais nada.
+
+Assinantes (em teste ou pagos) ganham acesso a um catálogo de mangás cadastrado pelo administrador
+em **Administração → Catálogo de mangás exclusivos**. Sem o Supabase configurado, a página VIP
+funciona em modo de demonstração local (o teste grátis fica salvo só neste navegador).
+
+### Habilitando o pagamento real (Mercado Pago)
 
 1. Crie uma conta/aplicação no [Mercado Pago Developers](https://www.mercadopago.com.br/developers)
    e copie o **Access Token** de produção.
 2. Em **Project Settings → API** no Supabase, copie também a chave **service_role** (além da
-   `anon public` já usada). Ela é necessária só no webhook, roda apenas no servidor e **nunca**
-   deve ser usada no navegador.
+   `anon public` já usada). Ela é necessária para o webhook de pagamento e para o endpoint de
+   teste grátis, roda apenas no servidor e **nunca** deve ser usada no navegador.
 3. Na Vercel, além de `SUPABASE_URL` e `SUPABASE_ANON_KEY`, adicione:
 
-   - `SUPABASE_SERVICE_ROLE_KEY`: a chave service_role do Supabase.
-   - `MERCADOPAGO_ACCESS_TOKEN`: o Access Token do Mercado Pago.
+   - `SUPABASE_SERVICE_ROLE_KEY`: a chave service_role do Supabase (necessária mesmo no modo
+     de teste grátis, para o endpoint `activate-trial` gravar a assinatura).
+   - `MERCADOPAGO_ACCESS_TOKEN`: o Access Token do Mercado Pago (só é usado quando `VIP_MODE`
+     estiver como `'paid'`).
 
 4. No painel do Mercado Pago, nenhuma configuração extra de URL é necessária: a `notification_url`
    e as `back_urls` são geradas automaticamente a partir do domínio do próprio deploy.
-5. No painel de Administração do site, cadastre os mangás do catálogo VIP (título, capa, descrição
-   e link de leitura).
+5. Troque `VIP_MODE` para `'paid'` em `vip.js` e publique um novo deploy.
 
 Por padrão, cada pagamento aprovado libera 30 dias de acesso VIP (renovação manual: o usuário
 assina novamente ao expirar). Uma assinatura recorrente automática exigiria o produto de

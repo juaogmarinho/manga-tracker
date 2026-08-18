@@ -18,8 +18,25 @@ function paintUser(user) {
   document.querySelector('#authScreen').hidden = !!user;
   if (!user) return;
   document.querySelector('#profileName').textContent = user.name;
-  document.querySelector('#profileInitial').textContent = user.name[0].toUpperCase();
+  const initialEl = document.querySelector('#profileInitial');
+  if (user.avatar) {
+    initialEl.style.backgroundImage = `url('${user.avatar}')`;
+    initialEl.style.backgroundSize = 'cover';
+    initialEl.style.backgroundPosition = 'center';
+    initialEl.textContent = '';
+  } else {
+    initialEl.style.backgroundImage = '';
+    initialEl.textContent = user.name[0].toUpperCase();
+  }
   document.querySelector('#pageTitle').innerHTML = `Olá, ${user.name.split(' ')[0]} <span>✦</span>`;
+}
+function updateCachedUser(patch) {
+  const user = activeUser();
+  if (!user) return null;
+  const updated = { ...user, ...patch };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+  paintUser(updated);
+  return updated;
 }
 function cacheUser(user) {
   const saved = { id: user.id, email: user.email, name: user.user_metadata?.full_name || user.name || user.email.split('@')[0], isAdmin: !!user.isAdmin };
