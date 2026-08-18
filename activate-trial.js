@@ -20,8 +20,12 @@ export default async function handler(request, response) {
 
   try {
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`
+      }
     });
+
     if (!userRes.ok) return response.status(401).json({ error: 'Sessão expirada. Entre novamente.' });
     const user = await userRes.json();
 
@@ -34,7 +38,7 @@ export default async function handler(request, response) {
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
+        Prefer: 'resolution=merge-duplicates,return=minimal'
       },
       body: JSON.stringify({
         user_id: user.id,
@@ -43,9 +47,10 @@ export default async function handler(request, response) {
         external_reference: user.id,
         last_payment_id: null,
         expires_at: expiresAt.toISOString(),
-        updated_at: new Date().toISOString(),
-      }),
+        updated_at: new Date().toISOString()
+      })
     });
+
     if (!upsertRes.ok) {
       console.error('Falha ao ativar teste grátis:', await upsertRes.text());
       return response.status(502).json({ error: 'Não foi possível ativar o teste grátis.' });
@@ -57,5 +62,3 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: 'Erro no servidor ao ativar o teste grátis.' });
   }
 }
-
-

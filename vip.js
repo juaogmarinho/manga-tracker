@@ -147,47 +147,16 @@ async function renderVipPage() {
 }
 
 function insertVipUI() {
-  if (document.querySelector('#vip')) return;
-  document.querySelector('.sidebar nav')?.insertAdjacentHTML(
-    'beforeend',
-    '<button class="nav-link" data-view="vip"><span>✦</span> VIP</button>'
-  );
-  document.querySelector('main')?.insertAdjacentHTML(
-    'beforeend',
-    `<section id="vip" class="view"><div class="settings-wrap"><p class="eyebrow">CONTEÚDO EXCLUSIVO</p><h2>Área VIP</h2><div id="vipContent"></div></div></section>`
-  );
+  return;
 }
 
 function handleVipReturn() {
-  const params = new URLSearchParams(location.search);
-  const state = params.get('vip');
-  if (!state) return;
-  const toastEl = document.querySelector('#toast');
-  const messages = {
-    success: 'Pagamento aprovado! Confirmando sua assinatura VIP...',
-    pending: 'Pagamento em processamento. Assim que for aprovado, seu acesso VIP será liberado.',
-    failure: 'O pagamento não foi concluído. Você pode tentar novamente na área VIP.',
-  };
-  if (toastEl && messages[state]) {
-    toastEl.textContent = messages[state];
-    toastEl.classList.add('show');
-    setTimeout(() => toastEl.classList.remove('show'), 4000);
-  }
-  history.replaceState(null, '', location.pathname);
-  document.querySelector('[data-view="vip"]')?.click();
-  if (state === 'success') {
-    let tries = 0;
-    const poll = setInterval(async () => {
-      tries++;
-      const status = await loadVipStatus();
-      if (status.active || tries >= 6) { clearInterval(poll); renderVipPage(); }
-    }, 3000);
-  }
+  return;
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  if (!activeUser()) return;
-  insertVipUI();
-  await renderVipPage();
-  handleVipReturn();
+document.addEventListener('DOMContentLoaded', () => {
+  const vipNav = document.querySelector('.nav-link[data-view="vip"]');
+  if (vipNav) vipNav.remove();
+  const vipSection = document.querySelector('#vip');
+  if (vipSection) vipSection.remove();
 });

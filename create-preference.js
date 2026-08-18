@@ -15,7 +15,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`
       },
       body: JSON.stringify({
         items: [
@@ -25,20 +25,20 @@
             description: 'Acesso ao catálogo de mangás exclusivos por 30 dias',
             quantity: 1,
             currency_id: 'BRL',
-            unit_price: 3.0,
-          },
+            unit_price: 3.0
+          }
         ],
         payer: { email, name: name || undefined },
         external_reference: userId,
         back_urls: {
           success: `${site}/?vip=success`,
           pending: `${site}/?vip=pending`,
-          failure: `${site}/?vip=failure`,
+          failure: `${site}/?vip=failure`
         },
         auto_return: 'approved',
         notification_url: `${site}/api/mercadopago/webhook`,
-        statement_descriptor: 'KITSUNE VIP',
-      }),
+        statement_descriptor: 'KITSUNE VIP'
+      })
     });
 
     const data = await mpResponse.json();
@@ -53,5 +53,3 @@
     return response.status(500).json({ error: 'Erro ao comunicar com o Mercado Pago.' });
   }
 }
-
-

@@ -34,14 +34,16 @@ window.cloudReady = (async () => {
 })();
 
 window.cloudSave = async data => {
-  const client = await window.cloudReady, user = activeUser();
+  const client = await window.cloudReady;
+  const user = activeUser();
   if (!client || !user) return;
   const { error } = await client.from('libraries').upsert({ user_id: user.id, data, updated_at: new Date().toISOString() });
   if (error) console.error('Não foi possível sincronizar a biblioteca.', error.message);
 };
 
 window.cloudLoad = async () => {
-  const client = await window.cloudReady, user = activeUser();
+  const client = await window.cloudReady;
+  const user = activeUser();
   if (!client || !user) return null;
   const { data, error } = await client.from('libraries').select('data').eq('user_id', user.id).maybeSingle();
   if (error) throw error;
@@ -49,14 +51,16 @@ window.cloudLoad = async () => {
 };
 
 window.cloudProfile = async () => {
-  const client = await window.cloudReady, user = activeUser();
+  const client = await window.cloudReady;
+  const user = activeUser();
   if (!client || !user) return null;
   const { data } = await client.from('profiles').select('full_name,is_admin,avatar_url').eq('id', user.id).maybeSingle();
   return data;
 };
 
 window.cloudSaveProfile = async patch => {
-  const client = await window.cloudReady, user = activeUser();
+  const client = await window.cloudReady;
+  const user = activeUser();
   if (!client || !user) throw new Error('Entre na sua conta para salvar o perfil.');
   const { error } = await client.from('profiles').update(patch).eq('id', user.id);
   if (error) throw error;
@@ -77,10 +81,14 @@ window.saveCloudSettings = async settings => {
 };
 
 window.cloudVipStatus = async () => {
-  const client = await window.cloudReady, user = activeUser();
+  const client = await window.cloudReady;
+  const user = activeUser();
   if (!client || !user) return null;
   const { data, error } = await client.from('subscriptions').select('status,expires_at').eq('user_id', user.id).maybeSingle();
-  if (error) { console.warn('Não foi possível verificar a assinatura VIP.', error.message); return null; }
+  if (error) {
+    console.warn('Não foi possível verificar a assinatura VIP.', error.message);
+    return null;
+  }
   if (!data) return { active: false };
   const active = data.status === 'active' && (!data.expires_at || new Date(data.expires_at) > new Date());
   return { active, expiresAt: data.expires_at };
@@ -90,7 +98,10 @@ window.cloudVipCatalog = async () => {
   const client = await window.cloudReady;
   if (!client) return null;
   const { data, error } = await client.from('vip_manga').select('*').order('created_at', { ascending: false });
-  if (error) { console.warn('Não foi possível carregar o catálogo VIP.', error.message); return []; }
+  if (error) {
+    console.warn('Não foi possível carregar o catálogo VIP.', error.message);
+    return [];
+  }
   return data || [];
 };
 
@@ -111,17 +122,22 @@ window.cloudVipDeleteManga = async id => {
 window.createVipCheckout = async () => {
   const user = activeUser();
   if (!user) throw new Error('Entre na sua conta para assinar o VIP.');
+
   try {
     const response = await fetch('/api/mercadopago/create-preference', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, email: user.email, name: user.name }),
+      body: JSON.stringify({ userId: user.id, email: user.email, name: user.name })
     });
+
     const data = await readJsonResponse(response, 'Não foi possível iniciar o pagamento.');
-    if (!response.ok || !data.init_point) throw new Error(data.error || 'Não foi possível iniciar o pagamento.');
+    if (!response.ok || !data.init_point) {
+      throw new Error(data.error || 'Não foi possível iniciar o pagamento.');
+    }
     return data.init_point;
   } catch (error) {
-    if (error.message && /rota|configurada|não foi encontrada|NOT_FOUND/i.test(error.message)) {
+    const message = String(error?.message || '');
+    if (/rota|configurada|não foi encontrada|NOT_FOUND/i.test(message)) {
       throw new Error('Esse recurso de pagamento não está habilitado neste ambiente. O VIP local continua disponível no navegador.');
     }
     throw error;
@@ -131,6 +147,7 @@ window.createVipCheckout = async () => {
 window.activateVipTrial = async () => {
   const client = await window.cloudReady;
   if (!client) throw new Error('Banco indisponível.');
+
   const { data } = await client.auth.getSession();
   const token = data?.session?.access_token;
   if (!token) throw new Error('Sessão expirada. Saia e entre novamente.');
@@ -138,17 +155,22 @@ window.activateVipTrial = async () => {
   try {
     const response = await fetch('/api/vip/activate-trial', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
     });
+
     const result = await readJsonResponse(response, 'Não foi possível ativar o teste grátis.');
-    if (!response.ok) throw new Error(result.error || 'Não foi possível ativar o teste grátis.');
+    if (!response.ok) {
+      throw new Error(result.error || 'Não foi possível ativar o teste grátis.');
+    }
     return result;
   } catch (error) {
-    if (error.message && /rota|configurada|não foi encontrada|NOT_FOUND/i.test(error.message)) {
+    const message = String(error?.message || '');
+    if (/rota|configurada|não foi encontrada|NOT_FOUND/i.test(message)) {
       throw new Error('A rota do teste VIP não está disponível neste ambiente. Você pode continuar usando o modo local do VIP.');
     }
     throw error;
   }
 };
-
-
