@@ -154,9 +154,25 @@ function handleVipReturn() {
   return;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const vipNav = document.querySelector('.nav-link[data-view="vip"]');
-  if (vipNav) vipNav.remove();
+function insertVipUI() {
+  const nav = document.querySelector('.nav-link[data-view="vip"]');
+  if (!nav) {
+    const navList = document.querySelector('.sidebar nav');
+    if (navList) {
+      navList.insertAdjacentHTML('beforeend', '<button class="nav-link" data-view="vip"><span>✦</span> Área VIP</button>');
+    }
+  }
+
   const vipSection = document.querySelector('#vip');
-  if (vipSection) vipSection.remove();
+  if (!vipSection) {
+    const main = document.querySelector('main');
+    if (main) {
+      main.insertAdjacentHTML('beforeend', '<section id="vip" class="view"><div id="vipContent"></div></section>');
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  insertVipUI();
+  await renderVipPage();
 });
