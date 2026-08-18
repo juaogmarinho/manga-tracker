@@ -142,30 +142,30 @@ function isPermissionOrPolicyError(error) {
   return /row-level security|violates row-level security|policy|permission denied|not authorized|insufficient privilege/i.test(message);
 }
 
+function loadLocalVipCatalog() {
+  try {
+    return JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+  } catch {
+    return [];
+  }
+}
+
 window.cloudVipCatalog = async () => {
   const client = await window.cloudReady;
   if (!client) return null;
   try {
     const { data, error } = await client.from('vip_manga').select('*').order('created_at', { ascending: false });
     if (error) {
-      if (isMissingTableError(error)) {
-        console.warn('Tabela VIP ausente no Supabase. Usando ambiente local para o catálogo VIP.');
-        try {
-          return JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
-        } catch {
-          return [];
-        }
+      if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
+        console.warn('Usando catálogo local porque o banco VIP está indisponível ou bloqueado por política.');
+        return loadLocalVipCatalog();
       }
       throw error;
     }
     return data || [];
   } catch (error) {
-    if (isMissingTableError(error)) {
-      try {
-        return JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
-      } catch {
-        return [];
-      }
+    if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
+      return loadLocalVipCatalog();
     }
     console.warn('Não foi possível carregar o catálogo VIP.', error.message);
     return [];
@@ -179,7 +179,7 @@ window.cloudVipAddManga = async manga => {
     const { error } = await client.from('vip_manga').insert(manga);
     if (error) {
       if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
-        const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+        const list = loadLocalVipCatalog();
         list.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...manga });
         localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
         return;
@@ -188,7 +188,7 @@ window.cloudVipAddManga = async manga => {
     }
   } catch (error) {
     if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
-      const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+      const list = loadLocalVipCatalog();
       list.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...manga });
       localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
       return;
@@ -204,7 +204,7 @@ window.cloudVipDeleteManga = async id => {
     const { error } = await client.from('vip_manga').delete().eq('id', id);
     if (error) {
       if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
-        const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]').filter(m => m.id !== id);
+        const list = loadLocalVipCatalog().filter(m => m.id !== id);
         localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
         return;
       }
@@ -212,7 +212,7 @@ window.cloudVipDeleteManga = async id => {
     }
   } catch (error) {
     if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
-      const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]').filter(m => m.id !== id);
+      const list = loadLocalVipCatalog().filter(m => m.id !== id);
       localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
       return;
     }
