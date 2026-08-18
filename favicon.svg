@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kitsune favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ff8f6d"/>
+      <stop offset="45%" stop-color="#f7645a"/>
+      <stop offset="100%" stop-color="#7f4ad8"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bg)"/>
+  <circle cx="48" cy="18" r="5" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="18" cy="18" r="3" fill="rgba(255,255,255,0.45)"/>
+  <path d="M43 13 L48 17 L43 21 Z" fill="rgba(255,255,255,0.6)"/>
+  <text x="32" y="42" text-anchor="middle" font-size="30" font-family="Georgia, 'Times New Roman', serif" font-weight="700" fill="#fdf5e8" letter-spacing="1">狐</text>
+  <path d="M14 50 C20 42, 28 39, 32 39 C36 39, 44 42, 50 50" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

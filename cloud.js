@@ -275,3 +275,4 @@ window.activateVipTrial = async () => {
     throw error;
   }
 };
+

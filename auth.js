@@ -1,4 +1,4 @@
-const SESSION_KEY = 'kitsune-cloud-user';
+﻿const SESSION_KEY = 'kitsune-cloud-user';
 const LOCAL_USERS_KEY = 'kitsune-local-users';
 const OFFLINE_ADMIN = { email: 'admin@kitsune.local', password: 'admin123', id: 'offline-admin', name: 'Administrador', isAdmin: true };
 let loginMode = 'login';
@@ -13,7 +13,7 @@ function getLocalUser(email, password) {
 function createLocalUser({ name, email, password }) {
   const users = loadLocalUsers();
   const key = String(email).trim().toLowerCase();
-  if (users[key]) return { error: 'Este e-mail já está cadastrado no modo local.' };
+  if (users[key]) return { error: 'Este e-mail jÃ¡ estÃ¡ cadastrado no modo local.' };
   const user = { id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`, email: key, name: String(name).trim() || key.split('@')[0], password: String(password), isAdmin: false };
   users[key] = user;
   saveLocalUsers(users);
@@ -27,8 +27,8 @@ function setAuthMode(mode) {
   document.querySelector('#authTitle').textContent = register ? 'Crie seu universo' : 'Entre no seu universo';
   document.querySelector('#authSub').textContent = register ? 'Sua biblioteca, seu ritmo, suas regras.' : 'Acompanhe exatamente de onde parou.';
   document.querySelector('#authNameField').hidden = !register;
-  document.querySelector('.auth-submit').innerHTML = register ? 'Criar minha conta <b>→</b>' : 'Entrar <b>→</b>';
-  document.querySelector('#authSwitch').innerHTML = register ? 'Já tem uma conta? <button type="button">Entrar</button>' : 'Ainda não tem uma conta? <button type="button">Crie sua conta</button>';
+  document.querySelector('.auth-submit').innerHTML = register ? 'Criar minha conta <b>â†’</b>' : 'Entrar <b>â†’</b>';
+  document.querySelector('#authSwitch').innerHTML = register ? 'JÃ¡ tem uma conta? <button type="button">Entrar</button>' : 'Ainda nÃ£o tem uma conta? <button type="button">Crie sua conta</button>';
   document.querySelector('#authError').textContent = '';
 }
 function paintUser(user) {
@@ -45,7 +45,7 @@ function paintUser(user) {
     initialEl.style.backgroundImage = '';
     initialEl.textContent = user.name[0].toUpperCase();
   }
-  document.querySelector('#pageTitle').innerHTML = `Olá, ${user.name.split(' ')[0]} <span>✦</span>`;
+  document.querySelector('#pageTitle').innerHTML = `OlÃ¡, ${user.name.split(' ')[0]} <span>âœ¦</span>`;
 }
 function updateCachedUser(patch) {
   const user = activeUser();
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     document.querySelector('#authEmail').value = OFFLINE_ADMIN.email;
     document.querySelector('#authPassword').value = OFFLINE_ADMIN.password;
-    document.querySelector('#authError').textContent = 'Modo local: entre com o administrador padrão para visualizar o sistema.';
+    document.querySelector('#authError').textContent = 'Modo local: entre com o administrador padrÃ£o para visualizar o sistema.';
   }
   document.querySelector('#authSwitch').addEventListener('click', () => {
     setAuthMode(loginMode === 'login' ? 'register' : 'login');
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       submit.disabled = false;
       if (adminMatch) { finishLocalLogin(OFFLINE_ADMIN); return; }
       if (localMatch) { finishLocalLogin(localMatch); return; }
-      error.textContent = 'Credenciais inválidas. Use admin@kitsune.local / admin123 ou cadastre uma conta local.'; return;
+      error.textContent = 'Credenciais invÃ¡lidas. Use admin@kitsune.local / admin123 ou cadastre uma conta local.'; return;
     }
 
     try {
@@ -151,9 +151,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const localMatch = getLocalUser(email, password);
       if (adminMatch) { finishLocalLogin(OFFLINE_ADMIN); return; }
       if (localMatch) { finishLocalLogin(localMatch); return; }
-      error.textContent = 'Não foi possível completar a autenticação. Tente novamente.';
+      error.textContent = 'NÃ£o foi possÃ­vel completar a autenticaÃ§Ã£o. Tente novamente.';
       submit.disabled = false;
     }
   });
   document.querySelector('#logout').addEventListener('click', async () => { if (client) await client.auth.signOut(); localStorage.removeItem(SESSION_KEY); location.reload(); });
 });
+

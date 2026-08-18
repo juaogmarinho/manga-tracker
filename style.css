@@ -41,6 +41,18 @@ button, input, select, textarea {
   font: inherit;
 }
 
+select {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--border-radius-base);
+}
+
+option {
+  background: var(--panel2);
+  color: var(--text);
+}
+
 button {
   cursor: pointer;
 }
@@ -137,10 +149,14 @@ nav {
 
 .sidebar-bottom {
   margin-top: auto;
-  padding: 18px;
+  padding: 16px 14px 12px;
   background: linear-gradient(140deg, #2b2637, #21212b);
   border-radius: var(--border-radius-base);
   animation: slideInUp 0.5s ease-out 0.2s both;
+}
+
+.sidebar-bottom--compact {
+  padding-top: 12px;
 }
 
 [data-theme="light"] .sidebar-bottom {
@@ -148,9 +164,14 @@ nav {
 }
 
 .sidebar-bottom p {
-  margin: 0 0 15px;
-  font: 16px 'Playfair Display';
-  line-height: 1.35;
+  margin: 0 0 12px;
+  font: 15px 'Playfair Display';
+  line-height: 1.3;
+  color: #f4efe9;
+}
+
+[data-theme="light"] .sidebar-bottom p {
+  color: #2b2a2f;
 }
 
 .add-button,
@@ -163,6 +184,17 @@ nav {
   font-weight: 700;
   box-shadow: 0 8px 20px rgba(255, 118, 89, 0.3);
   transition: all var(--animation-duration) ease;
+}
+
+.add-button--compact {
+  min-width: 50px;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  font-size: 26px;
+  line-height: 1;
 }
 
 .add-button:hover,
