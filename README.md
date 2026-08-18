@@ -5,19 +5,59 @@ Aplicação web para acompanhar animes e mangás, com autenticação, biblioteca
 ## Estrutura
 
 ```text
-index.html             Interface principal
-style.css              Estilos base
-enhancements.css       Tela de acesso e refinamentos visuais
-admin.css              Estilos do painel administrativo
-app.js                 Biblioteca, filtros, obras e backup
-auth.js                Login, cadastro e administrador local
-cloud.js               Integração Supabase e sincronização
-sync.js                Carregamento da biblioteca online
-public-settings.js     Aplicação de personalizações globais
-admin.js               Painel administrativo
-api/config.js          Endpoint Vercel para configuração pública
-supabase/schema.sql    Tabelas, políticas RLS e trigger do Supabase
+index.html                        Interface principal
+style.css                         Estilos base
+enhancements.css                  Tela de acesso, refinamentos visuais e área VIP
+admin.css                         Estilos do painel administrativo
+app.js                            Biblioteca, filtros, ordenação, obras e backup
+auth.js                           Login, cadastro e administrador local
+cloud.js                          Integração Supabase, sincronização e VIP
+sync.js                           Carregamento da biblioteca online
+public-settings.js                Aplicação de personalizações globais
+admin.js                          Painel administrativo (personalização + catálogo VIP)
+vip.js                            Página de assinatura VIP e catálogo de mangás exclusivos
+api/config.js                     Endpoint Vercel para configuração pública do Supabase
+api/mercadopago/create-preference.js  Cria a cobrança de R$ 3,00 no Mercado Pago
+api/mercadopago/webhook.js        Confirma o pagamento e ativa a assinatura VIP
+supabase/schema.sql               Tabelas, políticas RLS e trigger do Supabase
 ```
+
+## Minha biblioteca
+
+A biblioteca ganhou: ordenação (recentes, atualizados, nome, nota, progresso), contador de
+resultados, busca por nome **ou** categoria e um botão para limpar todos os filtros de uma vez.
+Também foram corrigidos bugs que afetavam a tela de detalhes (ações como editar/excluir podiam
+atingir a obra errada quando havia nomes repetidos), obras importadas sem categoria (que travavam
+a tela) e categorias novas criadas durante o cadastro de uma obra, que se perdiam se o formulário
+fosse cancelado sem salvar.
+
+## Área VIP (R$ 3,00 · Mercado Pago)
+
+Assinantes VIP pagam R$ 3,00 via Mercado Pago (Pix ou cartão, na página de checkout do próprio
+Mercado Pago) e ganham acesso, por 30 dias, a um catálogo de mangás cadastrado pelo administrador.
+Sem o Supabase e o Mercado Pago configurados, a página VIP funciona em modo de demonstração local
+(sem cobrança real).
+
+Para habilitar pagamentos reais:
+
+1. Crie uma conta/aplicação no [Mercado Pago Developers](https://www.mercadopago.com.br/developers)
+   e copie o **Access Token** de produção.
+2. Em **Project Settings → API** no Supabase, copie também a chave **service_role** (além da
+   `anon public` já usada). Ela é necessária só no webhook, roda apenas no servidor e **nunca**
+   deve ser usada no navegador.
+3. Na Vercel, além de `SUPABASE_URL` e `SUPABASE_ANON_KEY`, adicione:
+
+   - `SUPABASE_SERVICE_ROLE_KEY`: a chave service_role do Supabase.
+   - `MERCADOPAGO_ACCESS_TOKEN`: o Access Token do Mercado Pago.
+
+4. No painel do Mercado Pago, nenhuma configuração extra de URL é necessária: a `notification_url`
+   e as `back_urls` são geradas automaticamente a partir do domínio do próprio deploy.
+5. No painel de Administração do site, cadastre os mangás do catálogo VIP (título, capa, descrição
+   e link de leitura).
+
+Por padrão, cada pagamento aprovado libera 30 dias de acesso VIP (renovação manual: o usuário
+assina novamente ao expirar). Uma assinatura recorrente automática exigiria o produto de
+"assinaturas" (preapproval) do Mercado Pago, que precisa de configuração adicional na conta.
 
 ## Visualização local
 

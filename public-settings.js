@@ -43,6 +43,11 @@ window.applyPublicSettings = settings => {
     document.documentElement.style.setProperty('--border-radius-base', settings.borderRadius + 'px');
   }
 
+  // Aplicar categorias padrão definidas pelo administrador
+  if (settings.categories && window.mergeGlobalCategories) {
+    window.mergeGlobalCategories(settings.categories);
+  }
+
   // Aplicar preferências de animação
   if (settings.animations) {
     if (settings.animations === 'reduced') {

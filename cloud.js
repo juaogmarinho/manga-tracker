@@ -39,3 +39,45 @@ window.saveCloudSettings = async settings => {
   const { error } = await client.from('app_settings').update({ settings, updated_at: new Date().toISOString() }).eq('id', true);
   if (error) throw error;
 };
+
+// ---- VIP: assinatura e catálogo de mangás ----
+window.cloudVipStatus = async () => {
+  const client = await window.cloudReady, user = activeUser();
+  if (!client || !user) return null;
+  const { data, error } = await client.from('subscriptions').select('status,expires_at').eq('user_id', user.id).maybeSingle();
+  if (error) { console.warn('Não foi possível verificar a assinatura VIP.', error.message); return null; }
+  if (!data) return { active: false };
+  const active = data.status === 'active' && (!data.expires_at || new Date(data.expires_at) > new Date());
+  return { active, expiresAt: data.expires_at };
+};
+window.cloudVipCatalog = async () => {
+  const client = await window.cloudReady;
+  if (!client) return null;
+  const { data, error } = await client.from('vip_manga').select('*').order('created_at', { ascending: false });
+  if (error) { console.warn('Não foi possível carregar o catálogo VIP.', error.message); return []; }
+  return data || [];
+};
+window.cloudVipAddManga = async manga => {
+  const client = await window.cloudReady;
+  if (!client) throw new Error('Banco indisponível');
+  const { error } = await client.from('vip_manga').insert(manga);
+  if (error) throw error;
+};
+window.cloudVipDeleteManga = async id => {
+  const client = await window.cloudReady;
+  if (!client) throw new Error('Banco indisponível');
+  const { error } = await client.from('vip_manga').delete().eq('id', id);
+  if (error) throw error;
+};
+window.createVipCheckout = async () => {
+  const user = activeUser();
+  if (!user) throw new Error('Entre na sua conta para assinar o VIP.');
+  const response = await fetch('/api/mercadopago/create-preference', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: user.id, email: user.email, name: user.name }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.init_point) throw new Error(data.error || 'Não foi possível iniciar o pagamento.');
+  return data.init_point;
+};
