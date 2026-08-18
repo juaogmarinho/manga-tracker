@@ -54,16 +54,54 @@ window.cloudProfile = async () => {
   const client = await window.cloudReady;
   const user = activeUser();
   if (!client || !user) return null;
-  const { data } = await client.from('profiles').select('full_name,is_admin,avatar_url').eq('id', user.id).maybeSingle();
-  return data;
+
+  try {
+    const { data, error } = await client.from('profiles').select('full_name,is_admin,avatar_url').eq('id', user.id).maybeSingle();
+    if (error) {
+      const message = String(error?.message || '');
+      if (/avatar_url|column.*profiles.*does not exist|could not find the 'avatar_url' column/i.test(message)) {
+        const fallback = await client.from('profiles').select('full_name,is_admin').eq('id', user.id).maybeSingle();
+        return fallback.data ? { ...fallback.data, avatar_url: null } : null;
+      }
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    const message = String(error?.message || '');
+    if (/avatar_url|column.*profiles.*does not exist|could not find the 'avatar_url' column/i.test(message)) {
+      const fallback = await client.from('profiles').select('full_name,is_admin').eq('id', user.id).maybeSingle();
+      return fallback.data ? { ...fallback.data, avatar_url: null } : null;
+    }
+    throw error;
+  }
 };
 
 window.cloudSaveProfile = async patch => {
   const client = await window.cloudReady;
   const user = activeUser();
   if (!client || !user) throw new Error('Entre na sua conta para salvar o perfil.');
-  const { error } = await client.from('profiles').update(patch).eq('id', user.id);
-  if (error) throw error;
+
+  const safePatch = { ...patch };
+  if (!safePatch.full_name && safePatch.full_name !== '') delete safePatch.full_name;
+
+  try {
+    const updatePayload = Object.fromEntries(Object.entries(safePatch).filter(([, value]) => value !== undefined));
+    const { error } = await client.from('profiles').upsert({ id: user.id, ...updatePayload }, { onConflict: 'id' });
+    if (error) throw error;
+  } catch (error) {
+    const message = String(error?.message || '');
+    if (/avatar_url|column.*profiles.*does not exist|could not find the 'avatar_url' column/i.test(message)) {
+      const fallbackPatch = { ...safePatch };
+      delete fallbackPatch.avatar_url;
+      if (Object.keys(fallbackPatch).length === 0) {
+        throw new Error('O banco de perfis ainda não possui a coluna avatar_url. Use o SQL de migração do Supabase antes de salvar foto de perfil.');
+      }
+      const { error: fallbackError } = await client.from('profiles').upsert({ id: user.id, ...fallbackPatch }, { onConflict: 'id' });
+      if (fallbackError) throw fallbackError;
+      return;
+    }
+    throw error;
+  }
 };
 
 window.cloudSettings = async () => {

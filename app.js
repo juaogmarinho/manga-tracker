@@ -9,10 +9,54 @@ function save(){localStorage.setItem(KEY,JSON.stringify(state));render();window.
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function dateText(v){return v?new Intl.DateTimeFormat('pt-BR').format(new Date(v+'T12:00:00')):'—'}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-function render(){renderStats();renderDashboardHighlights();renderContinue();renderLibrary();}
+function render(){renderStats();renderDashboardHighlights();renderContinue();renderRecommendations();renderLibrary();}
 function progress(w){return w.total?Math.min(100,Math.round(w.current/w.total*100)):0}
 function card(w){const cover=w.cover?`style="background-image:url('${esc(w.cover)}')"`:'';const label=w.type==='Anime'?'Episódio':'Capítulo';return `<article class="work-card" data-id="${w.id}"><div class="cover" ${cover}><span class="card-type">${w.type}</span>${!w.cover?'✦':''}</div><div class="card-info"><h3 title="${esc(w.name)}">${esc(w.name)}</h3><div class="card-meta"><span>${esc(w.status)}</span><span>${label} ${w.current}${w.total?' / '+w.total:''}</span></div><div class="progressbar"><i style="width:${progress(w)}%"></i></div>${w.url?'<div class="card-actions"><button class="mini-btn external">↗ Abrir</button></div>':''}</div></article>`}
 function renderStats(){const c={total:state.works.length,anime:state.works.filter(w=>w.type==='Anime'&&w.status==='Assistindo/Lendo').length,manga:state.works.filter(w=>w.type==='Mangá'&&w.status==='Assistindo/Lendo').length,complete:state.works.filter(w=>w.status==='Completo').length,paused:state.works.filter(w=>w.status==='Pausado').length};$('#stats').innerHTML=[['▣','Obras cadastradas',c.total],['◎','Animes assistindo',c.anime],['▤','Mangás lendo',c.manga],['✓','Completos',c.complete],['⏸','Pausados',c.paused]].map(x=>`<div class="stat"><span class="icon">${x[0]}</span><small>${x[1]}</small><div class="number">${x[2]}</div></div>`).join('')}
+function makeCoverArt(title, accent, accent2) {
+  const label = (title || 'Kitsune').slice(0, 18).toUpperCase();
+  const svg = `
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 620'>
+      <defs>
+        <linearGradient id='g1' x1='0' x2='1' y1='0' y2='1'>
+          <stop offset='0%' stop-color='${accent}'/>
+          <stop offset='100%' stop-color='${accent2}'/>
+        </linearGradient>
+      </defs>
+      <rect width='900' height='620' fill='url(#g1)'/>
+      <circle cx='760' cy='110' r='200' fill='rgba(255,255,255,0.12)'/>
+      <circle cx='140' cy='560' r='180' fill='rgba(0,0,0,0.12)'/>
+      <path d='M160 520C220 420 320 350 420 330C540 308 660 348 760 430L900 620L0 620L0 520Z' fill='rgba(10,12,18,0.18)'/>
+      <text x='60' y='300' font-size='74' font-family='Georgia, serif' font-weight='700' fill='rgba(255,255,255,0.95)' letter-spacing='8'>${esc(label)}</text>
+      <text x='60' y='370' font-size='28' font-family='Arial, sans-serif' fill='rgba(255,255,255,0.82)' letter-spacing='7'>RECOMENDO LER</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+function renderRecommendations(){
+  const recommendations = [
+    { title: 'Frieren: Além do Fim do Viaje', type: 'Slice of Life / Fantasia', blurb: 'Uma jornada tranquila, profunda e memorável.', accent: '#7a6cff', accent2: '#ff7f6a' },
+    { title: 'Vinland Saga', type: 'Drama / Ação', blurb: 'História intensa, humana e muito bem escrita.', accent: '#3f7cff', accent2: '#ffad66' },
+    { title: 'Berserk', type: 'Fantasia Sombria', blurb: 'Uma leitura brutal, intensa e lendária.', accent: '#a43f63', accent2: '#3b213f' },
+    { title: 'Solo Leveling', type: 'Ação / Fantasia', blurb: 'Poder, ritmo e evolução constantes.', accent: '#ff7d5a', accent2: '#7b6dff' }
+  ];
+  const list = document.querySelector('#recommendationsList');
+  if (!list) return;
+  list.innerHTML = recommendations.map(item => {
+    const cover = makeCoverArt(item.title, item.accent, item.accent2);
+    return `
+      <article class="recommendation-card">
+        <div class="recommendation-cover" style="background-image:linear-gradient(180deg, rgba(7,8,14,.15), rgba(7,8,14,.5)), url('${cover}')"></div>
+        <div class="recommendation-body">
+          <span class="recommendation-tag">Recomendado</span>
+          <h3>${esc(item.title)}</h3>
+          <p>${esc(item.type)}</p>
+          <small>${esc(item.blurb)}</small>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
 function renderDashboardHighlights(){
   const dash = document.querySelector('#dashboard');
   if (!dash) return;
