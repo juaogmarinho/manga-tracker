@@ -15,8 +15,9 @@ async function renderVipManageList() {
 }
 document.addEventListener('DOMContentLoaded', async () => {
   const user = activeUser();
-  const profile = user?.isAdmin ? { is_admin: true } : await window.cloudProfile?.();
-  if (!profile?.is_admin) return;
+  if (!user) return;
+
+  const client = await window.cloudReady;
   document.querySelector('.sidebar nav').insertAdjacentHTML('beforeend', '<button class="nav-link" data-view="admin"><span>◉</span> Administração</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', `<section id="admin" class="view"><div class="settings-wrap"><p class="eyebrow">CONTROLE DO SISTEMA</p><h2>Painel administrativo</h2><div class="admin-hero"><div><small>ACESSO DE ADMINISTRADOR</small><h3>Personalize a experiência do Kitsune.</h3><p>As alterações ficam disponíveis para todos quando o banco estiver conectado.</p></div><span>✦</span></div><form id="adminForm" class="admin-form"><label>Nome do sistema<input id="adminAppName" maxlength="30"></label><label>Mensagem de boas-vindas<input id="adminWelcome" maxlength="100"></label><label>Cor principal<input id="adminAccent" type="color"></label><label>Nome da área VIP<input id="adminVipTitle" maxlength="40"></label><label>Resumo da área VIP<textarea id="adminVipSubtitle" rows="2" maxlength="120"></textarea></label><label>Cor da área VIP<input id="adminVipAccent" type="color"></label><label>Texto do botão VIP<input id="adminVipCta" maxlength="40"></label><label>Categorias padrão (separadas por vírgula)<textarea id="adminCategories" rows="4"></textarea></label><button class="primary">Salvar personalização</button><p class="error" id="adminError"></p></form><div class="admin-hero" style="margin-top:26px"><div><small>ÁREA VIP · TESTE GRÁTIS (EM DESENVOLVIMENTO)</small><h3>Catálogo de mangás exclusivos.</h3><p>Cadastre os mangás que os usuários com teste grátis do VIP podem acessar. A cobrança de R$ 3,00 fica pronta em <code>vip.js</code> para ser ligada quando o desenvolvimento terminar.</p></div><span>狐</span></div><div id="vipManageList" class="manage-list"></div><form id="vipMangaForm" class="admin-form"><label>Título*<input id="vipTitle" required maxlength="80"></label><label>Capa (URL da imagem)<input id="vipCover" type="url" placeholder="https://..."></label><label>Descrição<textarea id="vipDescription" rows="2" maxlength="300"></textarea></label><label>Link de leitura*<input id="vipReadUrl" type="url" required placeholder="https://..."></label><button class="primary">Adicionar mangá VIP</button><p class="error" id="vipError"></p></form></div></section>`);
   let settings = await window.cloudSettings?.();
@@ -57,15 +58,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (client) { await window.cloudVipAddManga(manga); }
       else { const list = JSON.parse(localStorage.getItem(LOCAL_VIP_CATALOG_KEY) || '[]'); list.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...manga }); localStorage.setItem(LOCAL_VIP_CATALOG_KEY, JSON.stringify(list)); }
       errorEl.textContent = ''; event.target.reset(); await renderVipManageList();
-    } catch (error) { errorEl.textContent = 'Não foi possível salvar: ' + error.message; }
+    } catch (error) {
+      try {
+        const list = JSON.parse(localStorage.getItem(LOCAL_VIP_CATALOG_KEY) || '[]');
+        list.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...manga });
+        localStorage.setItem(LOCAL_VIP_CATALOG_KEY, JSON.stringify(list));
+        errorEl.textContent = 'Acesso bloqueado pelo Supabase. Salvo localmente. Para publicar no banco, deixe o usuário como admin em public.profiles.';
+        await renderVipManageList();
+      } catch {
+        errorEl.textContent = 'Não foi possível salvar: ' + error.message;
+      }
+    }
   });
   document.querySelector('#vipManageList').addEventListener('click', async event => {
     const btn = event.target.closest('[data-vip-id]');
     if (!btn) return;
     if (!confirm('Remover este mangá do catálogo VIP?')) return;
     const client = await window.cloudReady;
-    if (client) { await window.cloudVipDeleteManga(btn.dataset.vipId); }
-    else { const list = (JSON.parse(localStorage.getItem(LOCAL_VIP_CATALOG_KEY) || '[]')).filter(m => m.id !== btn.dataset.vipId); localStorage.setItem(LOCAL_VIP_CATALOG_KEY, JSON.stringify(list)); }
-    await renderVipManageList();
+    try {
+      if (client) { await window.cloudVipDeleteManga(btn.dataset.vipId); }
+      else { const list = (JSON.parse(localStorage.getItem(LOCAL_VIP_CATALOG_KEY) || '[]')).filter(m => m.id !== btn.dataset.vipId); localStorage.setItem(LOCAL_VIP_CATALOG_KEY, JSON.stringify(list)); }
+      await renderVipManageList();
+    } catch (error) {
+      const list = JSON.parse(localStorage.getItem(LOCAL_VIP_CATALOG_KEY) || '[]').filter(m => m.id !== btn.dataset.vipId);
+      localStorage.setItem(LOCAL_VIP_CATALOG_KEY, JSON.stringify(list));
+      await renderVipManageList();
+    }
   });
 });

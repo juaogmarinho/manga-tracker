@@ -132,29 +132,92 @@ window.cloudVipStatus = async () => {
   return { active, expiresAt: data.expires_at };
 };
 
+function isMissingTableError(error) {
+  const message = String(error?.message || '');
+  return /could not find the table|does not exist|schema cache|vip_manga/i.test(message);
+}
+
+function isPermissionOrPolicyError(error) {
+  const message = String(error?.message || '');
+  return /row-level security|violates row-level security|policy|permission denied|not authorized|insufficient privilege/i.test(message);
+}
+
 window.cloudVipCatalog = async () => {
   const client = await window.cloudReady;
   if (!client) return null;
-  const { data, error } = await client.from('vip_manga').select('*').order('created_at', { ascending: false });
-  if (error) {
+  try {
+    const { data, error } = await client.from('vip_manga').select('*').order('created_at', { ascending: false });
+    if (error) {
+      if (isMissingTableError(error)) {
+        console.warn('Tabela VIP ausente no Supabase. Usando ambiente local para o catálogo VIP.');
+        try {
+          return JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+        } catch {
+          return [];
+        }
+      }
+      throw error;
+    }
+    return data || [];
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      try {
+        return JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+      } catch {
+        return [];
+      }
+    }
     console.warn('Não foi possível carregar o catálogo VIP.', error.message);
     return [];
   }
-  return data || [];
 };
 
 window.cloudVipAddManga = async manga => {
   const client = await window.cloudReady;
   if (!client) throw new Error('Banco indisponível');
-  const { error } = await client.from('vip_manga').insert(manga);
-  if (error) throw error;
+  try {
+    const { error } = await client.from('vip_manga').insert(manga);
+    if (error) {
+      if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
+        const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+        list.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...manga });
+        localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
+        return;
+      }
+      throw error;
+    }
+  } catch (error) {
+    if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
+      const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]');
+      list.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...manga });
+      localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
+      return;
+    }
+    throw error;
+  }
 };
 
 window.cloudVipDeleteManga = async id => {
   const client = await window.cloudReady;
   if (!client) throw new Error('Banco indisponível');
-  const { error } = await client.from('vip_manga').delete().eq('id', id);
-  if (error) throw error;
+  try {
+    const { error } = await client.from('vip_manga').delete().eq('id', id);
+    if (error) {
+      if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
+        const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]').filter(m => m.id !== id);
+        localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
+        return;
+      }
+      throw error;
+    }
+  } catch (error) {
+    if (isMissingTableError(error) || isPermissionOrPolicyError(error)) {
+      const list = JSON.parse(localStorage.getItem('kitsune-local-vip-catalog') || '[]').filter(m => m.id !== id);
+      localStorage.setItem('kitsune-local-vip-catalog', JSON.stringify(list));
+      return;
+    }
+    throw error;
+  }
 };
 
 window.createVipCheckout = async () => {
