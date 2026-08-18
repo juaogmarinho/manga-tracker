@@ -26,23 +26,63 @@ async function loadVipStatus() {
   return { active: false };
 }
 
+async function getVipSettings() {
+  try {
+    const settings = await window.cloudSettings?.();
+    if (settings) return settings;
+  } catch {}
+
+  try {
+    return JSON.parse(localStorage.getItem('kitsune-local-settings') || '{}');
+  } catch {
+    return {};
+  }
+}
+
 async function renderVipPage() {
   const wrap = document.querySelector('#vipContent');
   if (!wrap) return;
   const client = await window.cloudReady;
   const status = await loadVipStatus();
+  const settings = await getVipSettings();
+  const vipTitle = settings.vipTitle || 'Área VIP';
+  const vipSubtitle = settings.vipSubtitle || 'Mangás premium, edições exclusivas e leitura sem interrupções.';
+  const vipCta = settings.vipCta || (VIP_MODE === 'trial' ? `Ativar teste grátis · ${VIP_TRIAL_DAYS} dias` : 'Assinar VIP · R$ 3,00');
+  const vipAccent = settings.vipAccent || '#f4c96c';
 
   if (!status.active) {
     const trialMode = VIP_MODE === 'trial';
+    const summaryText = trialMode
+      ? `A Área VIP está em desenvolvimento — por enquanto, ative um teste grátis de ${VIP_TRIAL_DAYS} dias e explore o acervo sem pagar nada.`
+      : 'Assinantes VIP têm acesso aos mangás já disponíveis no site por apenas <b>R$ 3,00</b>.';
+
     wrap.innerHTML = `
-      <div class="vip-pitch">
-        <span class="vip-badge">✦ VIP ${trialMode ? '· Teste grátis' : ''}</span>
-        <h2>Desbloqueie o acervo de mangás exclusivos</h2>
-        <p>${trialMode
-          ? `A Área VIP está em desenvolvimento — por enquanto, ative um teste grátis de ${VIP_TRIAL_DAYS} dias e explore o acervo sem pagar nada.`
-          : 'Assinantes VIP têm acesso aos mangás já disponíveis no site por apenas <b>R$ 3,00</b>.'}</p>
-        <button class="primary" id="vipSubscribeBtn">${trialMode ? `Ativar teste grátis · ${VIP_TRIAL_DAYS} dias` : 'Assinar VIP · R$ 3,00'} <b>→</b></button>
-        <p class="vip-note" id="vipNote"></p>
+      <div class="vip-shell">
+        <div class="vip-hero" style="--vip-accent:${vipAccent};">
+          <div class="vip-hero-copy">
+            <span class="vip-badge">✦ VIP ${trialMode ? '· Teste grátis' : ''}</span>
+            <h2>${vipTitle}</h2>
+            <p>${vipSubtitle}</p>
+            <ul class="vip-feature-list">
+              <li>Catálogo premium selecionado</li>
+              <li>Acesso antecipado a lançamentos</li>
+              <li>Leitura sem distrações</li>
+            </ul>
+            <div class="vip-actions">
+              <button class="primary" id="vipSubscribeBtn">${vipCta} <b>→</b></button>
+            </div>
+            <p class="vip-note" id="vipNote"></p>
+          </div>
+          <div class="vip-preview-card">
+            <div class="vip-preview-top"><span>Premium</span><strong>${trialMode ? 'Teste grátis' : 'Assinatura'}</strong></div>
+            <div class="vip-price-tag">${trialMode ? `${VIP_TRIAL_DAYS} dias` : 'R$ 3,00'}</div>
+            <p>${summaryText}</p>
+            <div class="vip-mini-stats">
+              <span>+120 títulos</span>
+              <span>Atualizações</span>
+            </div>
+          </div>
+        </div>
       </div>`;
     const note = document.querySelector('#vipNote');
     const btn = document.querySelector('#vipSubscribeBtn');
@@ -85,8 +125,25 @@ async function renderVipPage() {
 
   const catalog = await loadVipCatalog();
   wrap.innerHTML = `
-    <div class="vip-active-banner"><span class="vip-badge">✦ VIP ativo${VIP_MODE === 'trial' ? ' · Teste grátis' : ''}</span>${status.expiresAt ? `<small>${VIP_MODE === 'trial' ? 'Teste expira em' : 'Renova em'} ${new Intl.DateTimeFormat('pt-BR').format(new Date(status.expiresAt))}</small>` : ''}</div>
-    <div class="vip-grid">${catalog.length ? catalog.map(vipMangaCard).join('') : '<div class="empty">Nenhum mangá disponível no catálogo VIP ainda. Volte em breve!</div>'}</div>`;
+    <div class="vip-shell vip-shell--active">
+      <div class="vip-hero vip-hero--active" style="--vip-accent:${vipAccent};">
+        <div class="vip-hero-copy">
+          <span class="vip-badge">✦ VIP ativo${VIP_MODE === 'trial' ? ' · Teste grátis' : ''}</span>
+          <h2>${vipTitle}</h2>
+          <p>${vipSubtitle}</p>
+          <div class="vip-status-row">
+            <span class="vip-pill">${VIP_MODE === 'trial' ? 'Teste em andamento' : 'Assinatura ativa'}</span>
+            ${status.expiresAt ? `<small>${VIP_MODE === 'trial' ? 'Expira em' : 'Renova em'} ${new Intl.DateTimeFormat('pt-BR').format(new Date(status.expiresAt))}</small>` : ''}
+          </div>
+        </div>
+        <div class="vip-preview-card">
+          <div class="vip-preview-top"><span>Benefícios</span><strong>VIP</strong></div>
+          <div class="vip-price-tag">${VIP_MODE === 'trial' ? '7 dias' : 'R$ 3,00'}</div>
+          <p>Seu acervo premium está liberado e atualizado com novas adições.</p>
+        </div>
+      </div>
+      <div class="vip-grid">${catalog.length ? catalog.map(vipMangaCard).join('') : '<div class="empty">Nenhum mangá disponível no catálogo VIP ainda. Volte em breve!</div>'}</div>
+    </div>`;
 }
 
 function insertVipUI() {

@@ -1,12 +1,27 @@
-window.supabaseClient = null;
+﻿window.supabaseClient = null;
+
+async function readJsonResponse(response, fallbackError) {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    const message = text && text.length < 200 ? text : fallbackError;
+    throw new Error(message);
+  }
+  return response.json();
+}
+
 window.cloudReady = (async () => {
   try {
     const response = await fetch('/api/config');
-    const config = await response.json();
+    if (!response.ok) return null;
+    const config = await readJsonResponse(response, 'Supabase não configurado');
     if (!config.configured) throw new Error('Supabase não configurado');
     window.supabaseClient = window.supabase.createClient(config.url, config.anonKey);
     return window.supabaseClient;
-  } catch (error) { console.info('Modo local: configure o Supabase para sincronizar.'); return null; }
+  } catch (error) {
+    console.info('Modo local: configure o Supabase para sincronizar.');
+    return null;
+  }
 })();
 window.cloudSave = async data => {
   const client = await window.cloudReady, user = activeUser();
@@ -83,7 +98,7 @@ window.createVipCheckout = async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: user.id, email: user.email, name: user.name }),
   });
-  const data = await response.json();
+  const data = await readJsonResponse(response, 'Não foi possível iniciar o pagamento.');
   if (!response.ok || !data.init_point) throw new Error(data.error || 'Não foi possível iniciar o pagamento.');
   return data.init_point;
 };
@@ -97,7 +112,7 @@ window.activateVipTrial = async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
   });
-  const result = await response.json();
+  const result = await readJsonResponse(response, 'Não foi possível ativar o teste grátis.');
   if (!response.ok) throw new Error(result.error || 'Não foi possível ativar o teste grátis.');
   return result;
 };

@@ -1,4 +1,4 @@
-// Recebe as notificações do Mercado Pago (formato novo e o antigo IPN), confirma o
+﻿// Recebe as notificações do Mercado Pago (formato novo e o antigo IPN), confirma o
 // pagamento na API do Mercado Pago e ativa a assinatura VIP no Supabase usando a
 // chave service_role — que só existe aqui no servidor e nunca é exposta ao navegador.
 

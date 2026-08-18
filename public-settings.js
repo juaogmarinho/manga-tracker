@@ -22,6 +22,11 @@ window.applyPublicSettings = settings => {
     document.documentElement.style.setProperty('--accent', settings.accent);
   }
 
+  // Aplicar personalização da área VIP
+  if (settings.vipAccent) {
+    document.documentElement.style.setProperty('--vip-accent', settings.vipAccent);
+  }
+
   // Aplicar mensagem de boas-vindas
   if (settings.welcome) {
     const heroH2 = document.querySelector('.hero h2');

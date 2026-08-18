@@ -1,4 +1,4 @@
-// Ativa um teste grátis de VIP para o usuário autenticado. Enquanto a Área VIP está em
+﻿// Ativa um teste grátis de VIP para o usuário autenticado. Enquanto a Área VIP está em
 // desenvolvimento, este endpoint substitui o pagamento — nenhuma cobrança é feita.
 // O token de sessão do usuário é validado contra a API de Auth do Supabase antes de
 // gravar a assinatura, e a gravação em si usa a chave service_role (somente no servidor).

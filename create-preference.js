@@ -1,4 +1,4 @@
-export default async function handler(request, response) {
+﻿export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Método não permitido' });
 
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
