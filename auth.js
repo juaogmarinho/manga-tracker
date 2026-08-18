@@ -1,7 +1,24 @@
 const SESSION_KEY = 'kitsune-cloud-user';
+const LOCAL_USERS_KEY = 'kitsune-local-users';
 const OFFLINE_ADMIN = { email: 'admin@kitsune.local', password: 'admin123', id: 'offline-admin', name: 'Administrador', isAdmin: true };
 let loginMode = 'login';
 const activeUser = () => { try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; } };
+function loadLocalUsers() { try { return JSON.parse(localStorage.getItem(LOCAL_USERS_KEY)) || {}; } catch { return {}; } }
+function saveLocalUsers(users) { localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users)); }
+function getLocalUser(email, password) {
+  const users = loadLocalUsers();
+  const entry = Object.values(users).find(user => user.email.toLowerCase() === String(email).toLowerCase() && user.password === password);
+  return entry || null;
+}
+function createLocalUser({ name, email, password }) {
+  const users = loadLocalUsers();
+  const key = String(email).trim().toLowerCase();
+  if (users[key]) return { error: 'Este e-mail já está cadastrado no modo local.' };
+  const user = { id: crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`, email: key, name: String(name).trim() || key.split('@')[0], password: String(password), isAdmin: false };
+  users[key] = user;
+  saveLocalUsers(users);
+  return { data: { user } };
+}
 
 function setAuthMode(mode) {
   loginMode = mode;
@@ -54,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('#authError').textContent = 'Modo local: entre com o administrador padrão para visualizar o sistema.';
   }
   document.querySelector('#authSwitch').addEventListener('click', () => {
-    if (!client) { document.querySelector('#authError').textContent = 'Cadastro exige o banco configurado. Use o administrador padrão nesta visualização.'; return; }
     setAuthMode(loginMode === 'login' ? 'register' : 'login');
   });
   document.querySelector('#authForm').addEventListener('submit', async event => {
@@ -63,12 +79,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const email = document.querySelector('#authEmail').value.trim().toLowerCase();
     const password = document.querySelector('#authPassword').value;
     const error = document.querySelector('#authError');
-    if (!client) {
-      if (email === OFFLINE_ADMIN.email && password === OFFLINE_ADMIN.password) { cacheUser(OFFLINE_ADMIN); location.reload(); return; }
-      error.textContent = 'Use admin@kitsune.local e a senha admin123.'; return;
-    }
     if (!email || password.length < 6 || (loginMode === 'register' && !name)) { error.textContent = 'Preencha os campos; a senha deve ter pelo menos 6 caracteres.'; return; }
     const submit = document.querySelector('.auth-submit'); submit.disabled = true; submit.textContent = 'Aguarde...';
+    if (!client) {
+      if (loginMode === 'register') {
+        const result = createLocalUser({ name, email, password });
+        submit.disabled = false;
+        if (result.error) { error.textContent = result.error; return; }
+        cacheUser(result.data.user);
+        location.reload();
+        return;
+      }
+      const adminMatch = email === OFFLINE_ADMIN.email && password === OFFLINE_ADMIN.password;
+      const localMatch = getLocalUser(email, password);
+      submit.disabled = false;
+      if (adminMatch) { cacheUser(OFFLINE_ADMIN); location.reload(); return; }
+      if (localMatch) { cacheUser(localMatch); location.reload(); return; }
+      error.textContent = 'Credenciais inválidas. Use admin@kitsune.local / admin123 ou cadastre uma conta local.'; return;
+    }
     const result = loginMode === 'register' ? await client.auth.signUp({ email, password, options: { data: { full_name: name } } }) : await client.auth.signInWithPassword({ email, password });
     submit.disabled = false;
     if (result.error) { error.textContent = result.error.message; setAuthMode(loginMode); return; }
