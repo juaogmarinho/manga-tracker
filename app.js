@@ -14,36 +14,38 @@ function progress(w){return w.total?Math.min(100,Math.round(w.current/w.total*10
 function card(w){const cover=w.cover?`style="background-image:url('${esc(w.cover)}')"`:'';const label=w.type==='Anime'?'Episódio':'Capítulo';return `<article class="work-card" data-id="${w.id}"><div class="cover" ${cover}><span class="card-type">${w.type}</span>${!w.cover?'✦':''}</div><div class="card-info"><h3 title="${esc(w.name)}">${esc(w.name)}</h3><div class="card-meta"><span>${esc(w.status)}</span><span>${label} ${w.current}${w.total?' / '+w.total:''}</span></div><div class="progressbar"><i style="width:${progress(w)}%"></i></div>${w.url?'<div class="card-actions"><button class="mini-btn external">↗ Abrir</button></div>':''}</div></article>`}
 function renderStats(){const c={total:state.works.length,anime:state.works.filter(w=>w.type==='Anime'&&w.status==='Assistindo/Lendo').length,manga:state.works.filter(w=>w.type==='Mangá'&&w.status==='Assistindo/Lendo').length,complete:state.works.filter(w=>w.status==='Completo').length,paused:state.works.filter(w=>w.status==='Pausado').length};$('#stats').innerHTML=[['▣','Obras cadastradas',c.total],['◎','Animes assistindo',c.anime],['▤','Mangás lendo',c.manga],['✓','Completos',c.complete],['⏸','Pausados',c.paused]].map(x=>`<div class="stat"><span class="icon">${x[0]}</span><small>${x[1]}</small><div class="number">${x[2]}</div></div>`).join('')}
 function makeCoverArt(title, accent, accent2) {
-  const label = (title || 'Kitsune').slice(0, 18).toUpperCase();
+  const label = String(title || 'Kitsune').slice(0, 18).toUpperCase().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const svg = `
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 620'>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620">
       <defs>
-        <linearGradient id='g1' x1='0' x2='1' y1='0' y2='1'>
-          <stop offset='0%' stop-color='${accent}'/>
-          <stop offset='100%' stop-color='${accent2}'/>
+        <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${accent}"/>
+          <stop offset="100%" stop-color="${accent2}"/>
         </linearGradient>
       </defs>
-      <rect width='900' height='620' fill='url(#g1)'/>
-      <circle cx='760' cy='110' r='200' fill='rgba(255,255,255,0.12)'/>
-      <circle cx='140' cy='560' r='180' fill='rgba(0,0,0,0.12)'/>
-      <path d='M160 520C220 420 320 350 420 330C540 308 660 348 760 430L900 620L0 620L0 520Z' fill='rgba(10,12,18,0.18)'/>
-      <text x='60' y='300' font-size='74' font-family='Georgia, serif' font-weight='700' fill='rgba(255,255,255,0.95)' letter-spacing='8'>${esc(label)}</text>
-      <text x='60' y='370' font-size='28' font-family='Arial, sans-serif' fill='rgba(255,255,255,0.82)' letter-spacing='7'>RECOMENDO LER</text>
+      <rect width="900" height="620" fill="url(#g1)"/>
+      <circle cx="760" cy="110" r="200" fill="rgba(255,255,255,0.12)"/>
+      <circle cx="140" cy="560" r="180" fill="rgba(0,0,0,0.12)"/>
+      <path d="M160 520C220 420 320 350 420 330C540 308 660 348 760 430L900 620L0 620L0 520Z" fill="rgba(10,12,18,0.18)"/>
+      <text x="60" y="300" font-size="74" font-family="Georgia, serif" font-weight="700" fill="rgba(255,255,255,0.95)" letter-spacing="8">${label}</text>
+      <text x="60" y="370" font-size="28" font-family="Arial, sans-serif" fill="rgba(255,255,255,0.82)" letter-spacing="7">RECOMENDO LER</text>
     </svg>
   `;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 function renderRecommendations(){
   const recommendations = [
-    { title: 'Frieren: Além do Fim do Viaje', type: 'Slice of Life / Fantasia', blurb: 'Uma jornada tranquila, profunda e memorável.', accent: '#7a6cff', accent2: '#ff7f6a' },
-    { title: 'Vinland Saga', type: 'Drama / Ação', blurb: 'História intensa, humana e muito bem escrita.', accent: '#3f7cff', accent2: '#ffad66' },
-    { title: 'Berserk', type: 'Fantasia Sombria', blurb: 'Uma leitura brutal, intensa e lendária.', accent: '#a43f63', accent2: '#3b213f' },
-    { title: 'Solo Leveling', type: 'Ação / Fantasia', blurb: 'Poder, ritmo e evolução constantes.', accent: '#ff7d5a', accent2: '#7b6dff' }
+    { title: 'Frieren: Além do Fim do Viaje', type: 'Slice of Life / Fantasia', blurb: 'Uma jornada tranquila, profunda e memorável.', cover: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1xlGYFjwQcKcruvn3uZRR88jWC3JZ4mGbRAuRRAfPfg&s=10' },
+    { title: 'Vinland Saga', type: 'Drama / Ação', blurb: 'História intensa, humana e muito bem escrita.', cover: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTdaQfG_m3XfVMDCVPdNcdFwUfY_xfXQJkBNKb5E1twQ&s=10' },
+    { title: 'Berserk', type: 'Fantasia Sombria', blurb: 'Uma leitura brutal, intensa e lendária.', cover: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvIjFxjtkiS4vfNUEIfeKtDCiQ3NAD-Bx6s0C8OShwGg&s' },
+    { title: 'Solo Leveling', type: 'Ação / Fantasia', blurb: 'Poder, ritmo e evolução constantes.', cover: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFBMN4Q1QdSXOrsXqHPl2yWnIA3JmRTHBuyenW7gotyg&s=10' }
   ];
   const list = document.querySelector('#recommendationsList');
   if (!list) return;
-  list.innerHTML = recommendations.map(item => {
-    const cover = makeCoverArt(item.title, item.accent, item.accent2);
+
+  const buildCard = item => {
+    const fallbackCover = makeCoverArt(item.title, item.accent || '#7a6cff', item.accent2 || '#ff7f6a');
+    const cover = item.cover ? encodeURI(item.cover) : fallbackCover;
     return `
       <article class="recommendation-card">
         <div class="recommendation-cover" style="background-image:linear-gradient(180deg, rgba(7,8,14,.15), rgba(7,8,14,.5)), url('${cover}')"></div>
@@ -55,7 +57,14 @@ function renderRecommendations(){
         </div>
       </article>
     `;
-  }).join('');
+  };
+
+  list.innerHTML = `
+    <div class="recommendations-track">
+      ${recommendations.map(buildCard).join('')}
+      ${recommendations.map(buildCard).join('')}
+    </div>
+  `;
 }
 function renderDashboardHighlights(){
   const dash = document.querySelector('#dashboard');
