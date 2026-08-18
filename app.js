@@ -9,10 +9,68 @@ function save(){localStorage.setItem(KEY,JSON.stringify(state));render();window.
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function dateText(v){return v?new Intl.DateTimeFormat('pt-BR').format(new Date(v+'T12:00:00')):'—'}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-function render(){renderStats();renderContinue();renderLibrary();}
+function render(){renderStats();renderDashboardHighlights();renderContinue();renderLibrary();}
 function progress(w){return w.total?Math.min(100,Math.round(w.current/w.total*100)):0}
-function card(w){const cover=w.cover?`style="background-image:url('${esc(w.cover)}')"`:'';const label=w.type==='Anime'?'Episódio':'Capítulo';return `<article class="work-card" data-id="${w.id}"><div class="cover" ${cover}><span class="card-type">${w.type}</span>${!w.cover?'✦':''}</div><div class="card-info"><h3 title="${esc(w.name)}">${esc(w.name)}</h3><div class="card-meta"><span>${esc(w.status)}</span><span>${label} ${w.current}${w.total?' / '+w.total:''}</span></div><div class="progressbar"><i style="width:${progress(w)}%"></i></div><div class="card-actions"><button class="mini-btn quick-minus" aria-label="Diminuir progresso">−</button><button class="mini-btn plus quick-plus" aria-label="Aumentar progresso">＋</button>${w.url?'<button class="mini-btn external">↗ Abrir</button>':''}</div></div></article>`}
+function card(w){const cover=w.cover?`style="background-image:url('${esc(w.cover)}')"`:'';const label=w.type==='Anime'?'Episódio':'Capítulo';return `<article class="work-card" data-id="${w.id}"><div class="cover" ${cover}><span class="card-type">${w.type}</span>${!w.cover?'✦':''}</div><div class="card-info"><h3 title="${esc(w.name)}">${esc(w.name)}</h3><div class="card-meta"><span>${esc(w.status)}</span><span>${label} ${w.current}${w.total?' / '+w.total:''}</span></div><div class="progressbar"><i style="width:${progress(w)}%"></i></div>${w.url?'<div class="card-actions"><button class="mini-btn external">↗ Abrir</button></div>':''}</div></article>`}
 function renderStats(){const c={total:state.works.length,anime:state.works.filter(w=>w.type==='Anime'&&w.status==='Assistindo/Lendo').length,manga:state.works.filter(w=>w.type==='Mangá'&&w.status==='Assistindo/Lendo').length,complete:state.works.filter(w=>w.status==='Completo').length,paused:state.works.filter(w=>w.status==='Pausado').length};$('#stats').innerHTML=[['▣','Obras cadastradas',c.total],['◎','Animes assistindo',c.anime],['▤','Mangás lendo',c.manga],['✓','Completos',c.complete],['⏸','Pausados',c.paused]].map(x=>`<div class="stat"><span class="icon">${x[0]}</span><small>${x[1]}</small><div class="number">${x[2]}</div></div>`).join('')}
+function renderDashboardHighlights(){
+  const dash = document.querySelector('#dashboard');
+  if (!dash) return;
+  const current = [...state.works].filter(w => w.status === 'Assistindo/Lendo');
+  const featured = [...state.works].sort((a,b) => {
+    const ratingDiff = (Number(b.rating) || 0) - (Number(a.rating) || 0);
+    if (ratingDiff) return ratingDiff;
+    return new Date(b.updatedAt || b.endDate || b.startDate || 0) - new Date(a.updatedAt || a.endDate || a.startDate || 0);
+  }).slice(0, 4);
+  const mangaPick = state.works.filter(w => w.type === 'Mangá').sort((a,b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))[0];
+  const animePick = state.works.filter(w => w.type === 'Anime').sort((a,b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))[0];
+  const completionRate = state.works.length ? Math.round((state.works.filter(w => w.status === 'Completo').length / state.works.length) * 100) : 0;
+  const nextTitle = current[0] || state.works[0] || null;
+
+  if (!dash.querySelector('.overview-panels')) {
+    dash.insertAdjacentHTML('beforeend', `
+      <div class="overview-panels">
+        <div class="overview-summary">
+          <article class="summary-tile summary-tile--primary">
+            <small>Próximo alvo</small>
+            <strong>${nextTitle ? esc(nextTitle.name) : 'Nenhuma obra'}</strong>
+            <span>${nextTitle ? `${nextTitle.type} · ${nextTitle.status}` : 'Acompanhe sua jornada'}</span>
+          </article>
+          <article class="summary-tile summary-tile--warm">
+            <small>Conclusão</small>
+            <strong>${completionRate}%</strong>
+            <span>das obras finalizadas</span>
+          </article>
+          <article class="summary-tile summary-tile--muted">
+            <small>Em andamento</small>
+            <strong>${current.length}</strong>
+            <span>títulos em progresso</span>
+          </article>
+        </div>
+        <div class="overview-feature-list"></div>
+      </div>
+    `);
+  }
+
+  const featureList = dash.querySelector('.overview-feature-list');
+  const tiles = [
+    { label: 'Mangá em destaque', title: mangaPick ? esc(mangaPick.name) : 'Ainda sem mangá', meta: mangaPick ? `${mangaPick.status} · Nota ${mangaPick.rating || '—'}` : 'Adicione mangás para destacar', tone: 'manga' },
+    { label: 'Anime em destaque', title: animePick ? esc(animePick.name) : 'Ainda sem anime', meta: animePick ? `${animePick.status} · Nota ${animePick.rating || '—'}` : 'Adicione animes para destacar', tone: 'anime' },
+    { label: 'Mais bem avaliado', title: featured[0] ? esc(featured[0].name) : 'Sem avaliações', meta: featured[0] ? `${featured[0].type} · ${featured[0].rating || 0}/10` : 'Avalie suas obras', tone: 'score' }
+  ];
+
+  featureList.innerHTML = tiles.map(tile => `
+    <article class="feature-card ${tile.tone}">
+      <span class="feature-label">${tile.label}</span>
+      <h3>${tile.title}</h3>
+      <p>${tile.meta}</p>
+    </article>
+  `).join('');
+
+  if (!featureList.dataset.initialized) {
+    featureList.dataset.initialized = 'true';
+  }
+}
 function renderContinue(){const works=state.works.filter(w=>w.status==='Assistindo/Lendo');$('#continueList').innerHTML=works.length?works.map(card).join(''):`<div class="empty">Ainda não há nada em andamento.<br><button class="text-button empty-add">Adicionar sua primeira obra →</button></div>`}
 const sorters={recent:(a,b)=>0,name:(a,b)=>a.name.localeCompare(b.name,'pt-BR'),rating:(a,b)=>(Number(b.rating)||0)-(Number(a.rating)||0),progress:(a,b)=>progress(b)-progress(a),updated:(a,b)=>new Date(b.endDate||b.startDate||0)-new Date(a.endDate||a.startDate||0)};
 function renderLibrary(){const type=$('#typeFilter').value,status=$('#statusFilter').value,cat=$('#categoryFilter').value,sort=$('#sortFilter')?.value||'recent',q=$('#search').value.trim().toLowerCase();$('#statusFilter').innerHTML='<option value="">Todos os status</option>'+statuses.map(s=>`<option ${status===s?'selected':''}>${s}</option>`).join('');$('#categoryFilter').innerHTML='<option value="">Todas as categorias</option>'+state.categories.map(s=>`<option ${cat===s?'selected':''}>${s}</option>`).join('');const quick=[['','Todos'],['Anime','Anime'],['Mangá','Mangá'],...statuses.map(x=>[x,x])];$('#quickFilters').innerHTML=quick.map(([v,n])=>`<button class="pill ${activeQuick===v?'active':''}" data-quick="${v}">${n}</button>`).join('');const hasFilters=type||status||cat||q||activeQuick||(sort!=='recent');const clearBtn=$('#clearFilters');if(clearBtn)clearBtn.hidden=!hasFilters;let works=state.works.filter(w=>(!type||w.type===type)&&(!status||w.status===status)&&(!cat||(w.categories||[]).includes(cat))&&(!q||w.name.toLowerCase().includes(q)||(w.categories||[]).some(c=>c.toLowerCase().includes(q))));if(activeQuick)works=works.filter(w=>w.type===activeQuick||w.status===activeQuick);if(sorters[sort])works=[...works].sort(sorters[sort]);const countEl=$('#resultCount');if(countEl)countEl.textContent=works.length?`${works.length} obra${works.length===1?'':'s'} encontrada${works.length===1?'':'s'}`:'';$('#libraryList').innerHTML=works.length?works.map(card).join(''):`<div class="empty">Nenhuma obra encontrada.<br><button class="text-button empty-add">Adicionar obra →</button></div>`}
