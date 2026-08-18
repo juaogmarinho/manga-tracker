@@ -53,3 +53,5 @@
     return response.status(500).json({ error: 'Erro ao comunicar com o Mercado Pago.' });
   }
 }
+
+
